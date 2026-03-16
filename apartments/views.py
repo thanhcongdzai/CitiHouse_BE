@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from bson.objectid import ObjectId
-from .db import apartments_collection, users_collection, deposit_orders_collection, viewing_appointments_collection
+from .db import apartments_collection, users_collection, deposit_orders_collection, viewing_appointments_collection, projects_collection
 
 def serialize_doc(doc):
     """Helper to convert MongoDB document to JSON serializable format."""
@@ -72,6 +72,64 @@ class ApartmentDetailView(APIView):
             result = apartments_collection.delete_one({"_id": ObjectId(pk)})
             if result.deleted_count == 0:
                 return Response({"error": "Apartment not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)
+
+class ProjectListCreateView(APIView):
+    def get(self, request):
+        try:
+            items = list(projects_collection.find())
+            serialized_items = [serialize_doc(item) for item in items]
+            return Response(serialized_items, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
+        try:
+            data = request.data
+            result = projects_collection.insert_one(data)
+            created_item = projects_collection.find_one({"_id": result.inserted_id})
+            return Response(serialize_doc(created_item), status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ProjectDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            item = projects_collection.find_one({"_id": ObjectId(pk)})
+            if not item:
+                return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(serialize_doc(item), status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        try:
+            data = request.data
+            if '_id' in data:
+                del data['_id']
+            if 'id' in data:
+                del data['id']
+
+            result = projects_collection.update_one(
+                {"_id": ObjectId(pk)},
+                {"$set": data}
+            )
+            
+            if result.matched_count == 0:
+                return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
+                
+            updated_item = projects_collection.find_one({"_id": ObjectId(pk)})
+            return Response(serialize_doc(updated_item), status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            result = projects_collection.delete_one({"_id": ObjectId(pk)})
+            if result.deleted_count == 0:
+                return Response({"error": "Project not found"}, status=status.HTTP_404_NOT_FOUND)
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)

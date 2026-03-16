@@ -3,7 +3,8 @@ from .views import (
     ApartmentListCreateView, ApartmentDetailView,
     UserListCreateView, UserDetailView,
     DepositOrderListCreateView, DepositOrderDetailView,
-    ViewingAppointmentListCreateView, ViewingAppointmentDetailView
+    ViewingAppointmentListCreateView, ViewingAppointmentDetailView,
+    ProjectListCreateView, ProjectDetailView
 )
 
 urlpatterns = [
@@ -22,4 +23,8 @@ urlpatterns = [
     # Viewing Appointments
     path('viewing-appointments/', ViewingAppointmentListCreateView.as_view(), name='viewing-appointment-list'),
     path('viewing-appointments/<str:pk>/', ViewingAppointmentDetailView.as_view(), name='viewing-appointment-detail'),
+    
+    # Projects
+    path('projects/', ProjectListCreateView.as_view(), name='project-list'),
+    path('projects/<str:pk>/', ProjectDetailView.as_view(), name='project-detail'),
 ]
