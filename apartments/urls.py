@@ -2,9 +2,10 @@ from django.urls import path
 from .views import (
     ApartmentListCreateView, ApartmentDetailView,
     UserListCreateView, UserDetailView,
-    DepositOrderListCreateView, DepositOrderDetailView,
+    DepositOrderListCreateView, DepositOrderDetailView, DepositOrderByBuyerView,
     ViewingAppointmentListCreateView, ViewingAppointmentDetailView,
-    ProjectListCreateView, ProjectDetailView
+    ProjectListCreateView, ProjectDetailView,
+    PasswordResetListCreateView, PasswordResetDetailView
 )
 
 urlpatterns = [
@@ -18,6 +19,7 @@ urlpatterns = [
     
     # Deposit Orders
     path('deposit-orders/', DepositOrderListCreateView.as_view(), name='deposit-order-list'),
+    path('deposit-orders/buyer/<str:buyer_id>/', DepositOrderByBuyerView.as_view(), name='deposit-order-by-buyer'),
     path('deposit-orders/<str:pk>/', DepositOrderDetailView.as_view(), name='deposit-order-detail'),
     
     # Viewing Appointments
@@ -27,4 +29,8 @@ urlpatterns = [
     # Projects
     path('projects/', ProjectListCreateView.as_view(), name='project-list'),
     path('projects/<str:pk>/', ProjectDetailView.as_view(), name='project-detail'),
+
+    # Password Resets
+    path('password-resets/', PasswordResetListCreateView.as_view(), name='password-reset-list'),
+    path('password-resets/<str:pk>/', PasswordResetDetailView.as_view(), name='password-reset-detail'),
 ]

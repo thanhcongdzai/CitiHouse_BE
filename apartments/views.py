@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from bson.objectid import ObjectId
-from .db import apartments_collection, users_collection, deposit_orders_collection, viewing_appointments_collection, projects_collection
+from .db import apartments_collection, users_collection, deposit_orders_collection, viewing_appointments_collection, projects_collection, password_resets_collection
 
 def serialize_doc(doc):
     """Helper to convert MongoDB document to JSON serializable format."""
@@ -210,6 +210,18 @@ class DepositOrderListCreateView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+class DepositOrderByBuyerView(APIView):
+    def get(self, request, buyer_id):
+        """Retrieve all deposit orders by buyerID."""
+        try:
+            items = list(deposit_orders_collection.find({"buyerId": buyer_id}))
+            if not items:
+                return Response([], status=status.HTTP_200_OK)
+            serialized_items = [serialize_doc(item) for item in items]
+            return Response(serialized_items, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class DepositOrderDetailView(APIView):
     def get(self, request, pk):
         try:
@@ -304,6 +316,66 @@ class ViewingAppointmentDetailView(APIView):
             result = viewing_appointments_collection.delete_one({"_id": ObjectId(pk)})
             if result.deleted_count == 0:
                 return Response({"error": "ViewingAppointment not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetListCreateView(APIView):
+    def get(self, request):
+        try:
+            items = list(password_resets_collection.find())
+            serialized_items = [serialize_doc(item) for item in items]
+            return Response(serialized_items, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def post(self, request):
+        try:
+            data = request.data
+            result = password_resets_collection.insert_one(data)
+            created_item = password_resets_collection.find_one({"_id": result.inserted_id})
+            return Response(serialize_doc(created_item), status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PasswordResetDetailView(APIView):
+    def get(self, request, pk):
+        try:
+            item = password_resets_collection.find_one({"_id": ObjectId(pk)})
+            if not item:
+                return Response({"error": "PasswordReset not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(serialize_doc(item), status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        try:
+            data = request.data
+            if '_id' in data:
+                del data['_id']
+            if 'id' in data:
+                del data['id']
+
+            result = password_resets_collection.update_one(
+                {"_id": ObjectId(pk)},
+                {"$set": data}
+            )
+
+            if result.matched_count == 0:
+                return Response({"error": "PasswordReset not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            updated_item = password_resets_collection.find_one({"_id": ObjectId(pk)})
+            return Response(serialize_doc(updated_item), status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        try:
+            result = password_resets_collection.delete_one({"_id": ObjectId(pk)})
+            if result.deleted_count == 0:
+                return Response({"error": "PasswordReset not found"}, status=status.HTTP_404_NOT_FOUND)
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception as e:
             return Response({"error": "Invalid ID format or server error"}, status=status.HTTP_400_BAD_REQUEST)
